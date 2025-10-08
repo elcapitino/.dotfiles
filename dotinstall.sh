@@ -16,43 +16,19 @@ echo "Current dir: $(pwd)"
 echo "──────────────────────────────────────────────"
 echo
 
-# ──────────────────────────────────────────────
-# Safety checks
-# ──────────────────────────────────────────────
-
-# 1. Make sure we're online
-if ! ping -c1 github.com &>/dev/null; then
-    echo "❌ Internet seems to be down. Connect and try again."
-    exit 1
-fi
-
-# 2. Detect if script was run from curl or locally
-if [[ "${BASH_SOURCE[0]:-}" == "$0" ]]; then
-    echo "⚙️  Running as local script."
-else
-    echo "🌐  Running via curl (remote install)."
-fi
-
-
-sleep 1
-echo
-echo "Let's get you set up..."
-sleep 1
-echo
-
-
-
+#!/bin/bash
+set -euo pipefail
 
 # ──────────────────────────────────────────────
 # Basic setup
 # ──────────────────────────────────────────────
-REPO_URL="https://github.com/elcapitino/.dotfiles.git"
+REPO_URL="https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git"
 SETUP_DIR="$HOME/.local/share/dotsetup"
 BIN_DIR="$HOME/.local/bin"
 CONFIG_DIR="$HOME/.config"
 
 # ──────────────────────────────────────────────
-# Clone repo if missing or update it
+# Clone repo if missing
 # ──────────────────────────────────────────────
 if [ ! -d "$SETUP_DIR" ]; then
     echo "[+] Cloning setup repo into $SETUP_DIR..."
@@ -63,7 +39,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# Helper: install package if missing (Arch)
+# Helper: check + install package (for pacman)
 # ──────────────────────────────────────────────
 install_pkg() {
     local pkg="$1"
@@ -76,21 +52,16 @@ install_pkg() {
 }
 
 # ──────────────────────────────────────────────
-# Essential packages for CachyOS + Hyprland
+# Base essentials (before yay)
 # ──────────────────────────────────────────────
-echo "[+] Checking and installing missing packages..."
-
-install_pkg stow
-install_pkg walker
+install_pkg git
+install_pkg base-devel
+install_pkg fzf
 install_pkg rofi
-install_pkg dunst
-install_pkg swww
-install_pkg wl-clipboard
-install_pkg grim
-install_pkg slurp
+install_pkg stow
 
 # ──────────────────────────────────────────────
-# Ensure yay (AUR helper) exists
+# Ensure yay is installed
 # ──────────────────────────────────────────────
 if ! command -v yay &>/dev/null; then
     echo "[+] Installing yay (AUR helper)..."
@@ -102,29 +73,38 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# LazyVim setup
+# Helper: install AUR packages
 # ──────────────────────────────────────────────
-if [ ! -d "$HOME/.config/nvim" ]; then
-    echo "[+] Installing LazyVim..."
-    git clone https://github.com/LazyVim/starter ~/.config/nvim
-    echo "[=] LazyVim installed. Run Neovim once to finish setup."
-else
-    echo "[=] Neovim config already exists, skipping LazyVim setup."
-fi
+aur_pkg() {
+    local pkg="$1"
+    if ! pacman -Qi "$pkg" &>/dev/null; then
+        echo "[+] Installing $pkg (AUR)..."
+        yay -S --needed --noconfirm "$pkg"
+    else
+        echo "[=] $pkg already installed."
+    fi
+}
 
 # ──────────────────────────────────────────────
-# Symlink configs (with stow)
+# AUR installs
 # ──────────────────────────────────────────────
-echo "[+] Linking configs with stow..."
+aur_pkg walker
+aur_pkg starship
+aur_pkg lazyvim
+
+# ──────────────────────────────────────────────
+# Symlink configs (using stow)
+# ──────────────────────────────────────────────
+echo "[+] Linking config files..."
 cd "$SETUP_DIR/configs"
 stow -t "$CONFIG_DIR" *
 
 # ──────────────────────────────────────────────
-# Copy scripts in bin/
+# Copy bin scripts
 # ──────────────────────────────────────────────
 mkdir -p "$BIN_DIR"
-cp -r "$SETUP_DIR/bin/"* "$BIN_DIR/" || true
-chmod +x "$BIN_DIR/"* || true
+cp -r "$SETUP_DIR/bin/"* "$BIN_DIR/"
+chmod +x "$BIN_DIR/"*
 
 # ──────────────────────────────────────────────
 # Final message
@@ -132,8 +112,5 @@ chmod +x "$BIN_DIR/"* || true
 echo
 echo "✅ Setup complete!"
 echo "Configs linked to $CONFIG_DIR"
-echo "Scripts copied to $BIN_DIR"
+echo "Scripts available in $BIN_DIR"
 echo "Repository cloned at $SETUP_DIR"
-echo
-echo "👉 Tip: Reboot or reload Hyprland for new configs to take effect."
-
