@@ -27,7 +27,7 @@ if ! ping -c1 github.com &>/dev/null; then
 fi
 
 # 2. Detect if script was run from curl or locally
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ "${BASH_SOURCE[0]:-}" == "$0" ]]; then
     echo "⚙️  Running as local script."
 else
     echo "🌐  Running via curl (remote install)."
