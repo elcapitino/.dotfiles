@@ -20,7 +20,7 @@ echo
 # ──────────────────────────────────────────────
 # Basic setup
 # ──────────────────────────────────────────────
-REPO_URL="https://github.com/elcapitino/.dotfiles.git"
+REPO_URL="https://github.com/elcapitino.dotfiles.git"
 SETUP_DIR="$HOME/.local/share/dotsetup"
 BIN_DIR="$HOME/.local/bin"
 CONFIG_DIR="$HOME/.config"
@@ -37,7 +37,7 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# Helper: check + install package (for pacman)
+# Helper: check + install package (for Arch)
 # ──────────────────────────────────────────────
 install_pkg() {
     local pkg="$1"
@@ -50,13 +50,15 @@ install_pkg() {
 }
 
 # ──────────────────────────────────────────────
-# Base essentials (before yay)
+# Install essentials
 # ──────────────────────────────────────────────
 install_pkg git
 install_pkg base-devel
 install_pkg fzf
 install_pkg rofi
 install_pkg stow
+install_pkg waybar
+install_pkg starship
 
 # ──────────────────────────────────────────────
 # Ensure yay is installed
@@ -71,38 +73,55 @@ else
 fi
 
 # ──────────────────────────────────────────────
-# Helper: install AUR packages
+# Install AUR packages
 # ──────────────────────────────────────────────
-aur_pkg() {
-    local pkg="$1"
-    if ! pacman -Qi "$pkg" &>/dev/null; then
-        echo "[+] Installing $pkg (AUR)..."
-        yay -S --needed --noconfirm "$pkg"
-    else
-        echo "[=] $pkg already installed."
-    fi
-}
+if command -v yay &>/dev/null; then
+    echo "[+] Installing AUR packages (walker, lazyvim)..."
+    yay -S --needed --noconfirm walker lazyvim
+fi
 
 # ──────────────────────────────────────────────
-# AUR installs
+# Detect correct source layout
 # ──────────────────────────────────────────────
-aur_pkg walker
-aur_pkg starship
-aur_pkg lazyvim
+if [ -d "$SETUP_DIR/.dotfiles" ]; then
+    DOTFILES_DIR="$SETUP_DIR/.dotfiles"
+else
+    DOTFILES_DIR="$SETUP_DIR"
+fi
 
 # ──────────────────────────────────────────────
 # Symlink configs (using stow)
 # ──────────────────────────────────────────────
-echo "[+] Linking config files..."
-cd "$SETUP_DIR/configs"
-stow -t "$CONFIG_DIR" *
+if [ -d "$DOTFILES_DIR/config" ]; then
+    echo "[+] Linking config files..."
+    mkdir -p "$CONFIG_DIR"
+    cd "$DOTFILES_DIR/config"
+    stow -t "$CONFIG_DIR" .
+else
+    echo "[!] No config directory found. Skipping..."
+fi
 
 # ──────────────────────────────────────────────
 # Copy bin scripts
 # ──────────────────────────────────────────────
-mkdir -p "$BIN_DIR"
-cp -r "$SETUP_DIR/bin/"* "$BIN_DIR/"
-chmod +x "$BIN_DIR/"*
+if [ -d "$DOTFILES_DIR/bin" ]; then
+    echo "[+] Copying scripts to $BIN_DIR..."
+    mkdir -p "$BIN_DIR"
+    cp -r "$DOTFILES_DIR/bin/"* "$BIN_DIR/" || true
+    chmod +x "$BIN_DIR/"* || true
+else
+    echo "[!] No bin directory found. Skipping..."
+fi
+
+# ──────────────────────────────────────────────
+# Optional extras (themes, apps, etc.)
+# ──────────────────────────────────────────────
+for dir in themes applications defaults migration; do
+    SRC="$DOTFILES_DIR/$dir"
+    if [ -d "$SRC" ]; then
+        echo "[=] Found $dir directory — skipping or handle manually later."
+    fi
+done
 
 # ──────────────────────────────────────────────
 # Final message
@@ -112,3 +131,6 @@ echo "✅ Setup complete!"
 echo "Configs linked to $CONFIG_DIR"
 echo "Scripts available in $BIN_DIR"
 echo "Repository cloned at $SETUP_DIR"
+echo
+echo "You can now reload Hyprland or run your menu shortcut!"
+
