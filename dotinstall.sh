@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-
-
 # ──────────────────────────────────────────────
 # Fancy intro
 # ──────────────────────────────────────────────
@@ -15,13 +13,12 @@ echo "Current dir: $(pwd)"
 echo "──────────────────────────────────────────────"
 echo
 
-
-
 # ──────────────────────────────────────────────
 # Basic setup
 # ──────────────────────────────────────────────
-REPO_URL="https://github.com/elcapitino.dotfiles.git"
+REPO_URL="https://github.com/elcapitino/.dotfiles.git"
 SETUP_DIR="$HOME/.local/share/dotsetup"
+DOTFILES_DIR="$SETUP_DIR/.dotfiles"
 BIN_DIR="$HOME/.local/bin"
 CONFIG_DIR="$HOME/.config"
 
@@ -34,6 +31,11 @@ if [ ! -d "$SETUP_DIR" ]; then
 else
     echo "[=] Setup repo already exists. Updating..."
     git -C "$SETUP_DIR" pull
+fi
+
+# Adjust if dotfiles live directly in the repo root
+if [ ! -d "$DOTFILES_DIR" ]; then
+    DOTFILES_DIR="$SETUP_DIR"
 fi
 
 # ──────────────────────────────────────────────
@@ -61,10 +63,10 @@ install_pkg waybar
 install_pkg starship
 
 # ──────────────────────────────────────────────
-# Ensure yay is installed
+# Ensure yay (AUR helper) is installed
 # ──────────────────────────────────────────────
 if ! command -v yay &>/dev/null; then
-    echo "[+] Installing yay (AUR helper)..."
+    echo "[+] Installing yay..."
     git clone https://aur.archlinux.org/yay.git /tmp/yay
     (cd /tmp/yay && makepkg -si --noconfirm)
     rm -rf /tmp/yay
@@ -81,15 +83,6 @@ if command -v yay &>/dev/null; then
 fi
 
 # ──────────────────────────────────────────────
-# Detect correct source layout
-# ──────────────────────────────────────────────
-if [ -d "$SETUP_DIR/.dotfiles" ]; then
-    DOTFILES_DIR="$SETUP_DIR/.dotfiles"
-else
-    DOTFILES_DIR="$SETUP_DIR"
-fi
-
-# ──────────────────────────────────────────────
 # Symlink configs (using stow)
 # ──────────────────────────────────────────────
 if [ -d "$DOTFILES_DIR/config" ]; then
@@ -98,7 +91,7 @@ if [ -d "$DOTFILES_DIR/config" ]; then
     cd "$DOTFILES_DIR/config"
     stow -t "$CONFIG_DIR" .
 else
-    echo "[!] No config directory found. Skipping..."
+    echo "[!] No config directory found. Skipping config linking."
 fi
 
 # ──────────────────────────────────────────────
@@ -110,16 +103,16 @@ if [ -d "$DOTFILES_DIR/bin" ]; then
     cp -r "$DOTFILES_DIR/bin/"* "$BIN_DIR/" || true
     chmod +x "$BIN_DIR/"* || true
 else
-    echo "[!] No bin directory found. Skipping..."
+    echo "[!] No bin directory found. Skipping script copy."
 fi
 
 # ──────────────────────────────────────────────
 # Optional extras (themes, apps, etc.)
 # ──────────────────────────────────────────────
-for dir in themes applications defaults migration; do
+for dir in themes applications defaults migration install; do
     SRC="$DOTFILES_DIR/$dir"
     if [ -d "$SRC" ]; then
-        echo "[=] Found $dir directory — skipping or handle manually later."
+        echo "[=] Found optional directory: $dir — you can handle it manually later."
     fi
 done
 
@@ -133,4 +126,3 @@ echo "Scripts available in $BIN_DIR"
 echo "Repository cloned at $SETUP_DIR"
 echo
 echo "You can now reload Hyprland or run your menu shortcut!"
-
