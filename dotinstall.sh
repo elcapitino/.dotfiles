@@ -1,8 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-#!/bin/bash
-set -euo pipefail
+
 
 # ──────────────────────────────────────────────
 # Fancy intro
@@ -16,13 +15,12 @@ echo "Current dir: $(pwd)"
 echo "──────────────────────────────────────────────"
 echo
 
-#!/bin/bash
-set -euo pipefail
+
 
 # ──────────────────────────────────────────────
 # Basic setup
 # ──────────────────────────────────────────────
-REPO_URL="https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git"
+REPO_URL="https://github.com/elcapitino/.dotfiles.git"
 SETUP_DIR="$HOME/.local/share/dotsetup"
 BIN_DIR="$HOME/.local/bin"
 CONFIG_DIR="$HOME/.config"
