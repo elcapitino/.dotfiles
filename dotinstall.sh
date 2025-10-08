@@ -33,11 +33,6 @@ else
     echo "🌐  Running via curl (remote install)."
 fi
 
-# 3. Sanity: check that we’re not missing half the file (simple heuristic)
-if ! grep -q "✅ Setup complete!" "$0"; then
-    echo "⚠️  This script looks incomplete or corrupted. Aborting for safety."
-    exit 1
-fi
 
 sleep 1
 echo
